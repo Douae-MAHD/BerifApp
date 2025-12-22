@@ -1,5 +1,5 @@
 class TypeTravail {
-  final String id;
+  final String? id;
   final String nomType;
 
   TypeTravail({

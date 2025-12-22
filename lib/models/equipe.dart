@@ -1,5 +1,5 @@
 class Equipe {
-  final String id;
+  final String? id;
   final String nomEquipe;
   final bool disponibilite;
 

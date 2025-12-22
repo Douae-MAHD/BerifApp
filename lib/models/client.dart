@@ -1,5 +1,5 @@
 class Client {
-  final String id;
+  final String? id;
   final String nomClient;
   final String adresse;
   final String ville;

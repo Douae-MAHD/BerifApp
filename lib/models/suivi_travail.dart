@@ -1,5 +1,5 @@
 class SuiviTravail {
-  final String id;
+  final String? id;
   final String travailId;
   final String equipeId;
   final String commentaire;

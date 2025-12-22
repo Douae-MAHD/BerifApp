@@ -83,4 +83,5 @@ class DefaultFirebaseOptions {
     authDomain: 'douae-e94ec.firebaseapp.com',
     storageBucket: 'douae-e94ec.firebasestorage.app',
   );
+
 }

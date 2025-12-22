@@ -1,5 +1,5 @@
 class Technicien {
-  final String id;
+  final String? id;
   final String utilisateurId;
   final String nom;
   final String prenom;
@@ -7,7 +7,7 @@ class Technicien {
   final String specialite;
 
   Technicien({
-    required this.id,
+    this.id,
     required this.utilisateurId,
     required this.nom,
     required this.prenom,

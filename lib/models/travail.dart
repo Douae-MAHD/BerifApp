@@ -1,5 +1,5 @@
 class Travail {
-  final String id;
+  final String? id;
   final String clientId;
   final String? equipeId;
   final String typeId;
