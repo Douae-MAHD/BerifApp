@@ -315,15 +315,7 @@ class _DashboardTechnicienScreenState extends State<DashboardTechnicienScreen> {
                       statut: travail['statut'],
                       priorite: travail['priorite'],
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SuiviTravailScreen(
-                              travailId: index.toString(),
-                              isTechnicien: true,
-                            ),
-                          ),
-                        );
+
                       },
                     ),
                   );
