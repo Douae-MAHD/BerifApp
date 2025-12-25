@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart'; // ✅ AJOUTE CETTE LIGNE
+
 class Travail {
   final String? id;
   final String clientId;
@@ -20,15 +22,27 @@ class Travail {
   });
 
   factory Travail.fromMap(String id, Map<String, dynamic> data) {
+    String normalizeStatut(dynamic value) {
+      if (value == null) return 'en_attente';
+      return value
+          .toString()
+          .toLowerCase()
+          .replaceAll(' ', '_');
+    }
+
     return Travail(
       id: id,
-      clientId: data['id_client'],
-      equipeId: data['id_equipe'],
-      typeId: data['id_type'],
-      commentaire: data['commentaire'],
-      datePlanifiee: data['datePlanifiee']?.toDate(),
-      dateRealisation: data['dateRealisation']?.toDate(),
-      statut: data['statut'],
+      clientId: data['id_client']?.toString() ?? '',
+      equipeId: data['id_equipe']?.toString(),
+      typeId: data['id_type']?.toString() ?? 'standard',
+      commentaire: data['commentaire']?.toString() ?? '',
+      datePlanifiee: data['datePlanifiee'] is Timestamp
+          ? (data['datePlanifiee'] as Timestamp).toDate()
+          : null,
+      dateRealisation: data['dateRealisation'] is Timestamp
+          ? (data['dateRealisation'] as Timestamp).toDate()
+          : null,
+      statut: normalizeStatut(data['statut']),
     );
   }
 

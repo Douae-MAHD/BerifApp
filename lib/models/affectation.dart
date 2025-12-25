@@ -1,27 +1,30 @@
 class Affectation {
+  final String id;
   final String equipeId;
   final String technicienId;
   final DateTime dateAffectation;
 
   Affectation({
+    required this.id,
     required this.equipeId,
     required this.technicienId,
     required this.dateAffectation,
   });
 
-  factory Affectation.fromMap(Map<String, dynamic> data) {
+  factory Affectation.fromMap(String id, Map<String, dynamic> data) {
     return Affectation(
-      equipeId: data['id_equipe'],
-      technicienId: data['id_technicien'],
-      dateAffectation: data['date_affectation'].toDate(),
+      id: id,
+      equipeId: data['equipeId'],
+      technicienId: data['technicienId'],
+      dateAffectation: data['dateAffectation'].toDate(),
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'id_equipe': equipeId,
-      'id_technicien': technicienId,
-      'date_affectation': dateAffectation,
+      'equipeId': equipeId,
+      'technicienId': technicienId,
+      'dateAffectation': dateAffectation,
     };
   }
 }
