@@ -28,19 +28,25 @@ class Client {
   factory Client.fromMap(String id, Map<String, dynamic> data) {
     return Client(
       id: id,
-      nomClient: data['nom_client'],
-      adresse: data['adresse'],
-      ville: data['ville'],
-      telephone: data['telephone'],
-      email: data['email'],
-      typeContrat: data['typeContrat'],
-      dateDebutContrat: data['dateDebutContrat']?.toDate(),
-      periodiciteMaintenance: data['periodiciteMaintenance'],
-      dateDernierIntervention: data['dateDernierIntervention']?.toDate(),
-      secteur: data['secteur'],
+      // On sécurise chaque champ String avec ?? ''
+      nomClient: data['nom_client']?.toString() ?? 'Sans nom',
+      adresse: data['adresse']?.toString() ?? 'Pas d\'adresse',
+      ville: data['ville']?.toString() ?? '',
+      telephone: data['telephone']?.toString() ?? '',
+      email: data['email']?.toString() ?? '',
+      typeContrat: data['typeContrat']?.toString() ?? 'Standard',
+      periodiciteMaintenance: data['periodiciteMaintenance']?.toString() ?? 'Mensuelle',
+      secteur: data['secteur']?.toString() ?? 'Général',
+
+      // Sécurisation des dates (si le champ n'existe pas ou n'est pas un Timestamp)
+      dateDebutContrat: data['dateDebutContrat'] != null
+          ? (data['dateDebutContrat'] as dynamic).toDate()
+          : null,
+      dateDernierIntervention: data['dateDernierIntervention'] != null
+          ? (data['dateDernierIntervention'] as dynamic).toDate()
+          : null,
     );
   }
-
   Map<String, dynamic> toMap() {
     return {
       'nom_client': nomClient,
