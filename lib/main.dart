@@ -1,23 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // Obligatoire pour Riverpod
-import 'package:firebase_core/firebase_core.dart';       // Obligatoire pour Firebase
-import 'package:intl/date_symbol_data_local.dart';       // Pour le formatage des dates en Français
-import 'firebase_options.dart';                          // Généré par FlutterFire CLI
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
+import 'firebase_options.dart';
 import 'app.dart';
 
-void main() async {
-  // 1. Indispensable pour initialiser les plugins avant runApp
+Future<void> main() async {
+  // 🔹 Obligatoire avant toute initialisation
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Initialisation de Firebase
+  // 🔹 Initialisation Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // 3. Initialisation des formats de date (pour afficher "Décembre 2025")
+  // 🔹 Configuration Firestore (cache activé)
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+
+  // 🔹 Initialisation formats de date (FR)
   await initializeDateFormatting('fr_FR', null);
 
-  // 4. Lancement de l'application enveloppée dans ProviderScope
+  // 🔍 Test Firestore (debug uniquement)
+  FirebaseFirestore.instance
+      .collection('travaux')
+      .limit(1)
+      .get()
+      .then((snap) {
+    print("🧪 Firestore OK → ${snap.docs.length} document(s)");
+  }).catchError((e) {
+    print("❌ Firestore ERROR → $e");
+  });
+
+  print("✅ Application initialisée avec succès");
+
+  // 🔹 Lancement de l'application
   runApp(
     const ProviderScope(
       child: BerifMVPApp(),

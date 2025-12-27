@@ -1,539 +1,283 @@
 import 'package:flutter/material.dart';
-import '../../widgets/card_travail.dart';
-
-class DashboardTechnicienScreen extends StatefulWidget {
-  const DashboardTechnicienScreen({super.key});
-
-  @override
-  State<DashboardTechnicienScreen> createState() =>
-      _DashboardTechnicienScreenState();
-}
-
-class _DashboardTechnicienScreenState extends State<DashboardTechnicienScreen> {
-  int _currentIndex = 0;
-
-  final List<Map<String, dynamic>> _mesTravaux = [
-    {
-      'titre': 'Installation réseau fibre',
-      'client': 'Entreprise ABC',
-      'date': 'Aujourd\'hui, 14:00',
-      'statut': 'En cours',
-      'priorite': 'Haute',
-      'adresse': '12 Rue de Paris, 75001',
-      'duree': '2 heures',
-    },
-    {
-      'titre': 'Maintenance serveur',
-      'client': 'XYZ Corp',
-      'date': 'Demain, 09:00',
-      'statut': 'Planifié',
-      'priorite': 'Moyenne',
-      'adresse': '45 Avenue Lyon, 69002',
-      'duree': '4 heures',
-    },
-    {
-      'titre': 'Dépannage informatique',
-      'client': 'M. Martin Durand',
-      'date': 'Hier, 15:30',
-      'statut': 'Terminé',
-      'priorite': 'Basse',
-      'adresse': '8 Rue des Lilas, 75018',
-      'duree': '1.5 heures',
-    },
-  ];
-
-  final List<Map<String, dynamic>> _stats = [
-    {
-      'label': 'Travaux ce mois',
-      'value': '15',
-      'icon': Icons.work_history,
-      'progress': 0.75,
-      'color': Colors.blue,
-    },
-    {
-      'label': 'Taux de réussite',
-      'value': '96%',
-      'icon': Icons.star_rate,
-      'progress': 0.96,
-      'color': Colors.green,
-    },
-    {
-      'label': 'Heures travaillées',
-      'value': '120h',
-      'icon': Icons.timer,
-      'progress': 0.8,
-      'color': Colors.orange,
-    },
-    {
-      'label': 'Satisfaction clients',
-      'value': '4.8/5',
-      'icon': Icons.sentiment_satisfied,
-      'progress': 0.96,
-      'color': Colors.purple,
-    },
-  ];
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart'; // ✅ Pour formater les dates
+import '../../providers/travail_provider.dart';
+import '../../models/travail.dart';
+import 'suivi_travail_screen.dart';
+class DashboardTechnicien extends ConsumerWidget {
+  const DashboardTechnicien({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // 📡 Écoute du flux Firebase
+    final travauxAsync = ref.watch(travauxStreamProvider);
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F7), // Fond gris très léger pour faire ressortir les cartes
       appBar: AppBar(
-        title: const Text('Tableau de bord Technicien'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
-            onPressed: () {},
-            tooltip: 'Scanner QR Code',
-          ),
-        ],
+        title: const Text("Mon Tableau de Bord"),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.white,
       ),
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.all(16),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                // En-tête avec informations du technicien
+      body: travauxAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text("Erreur de connexion : $err")),
+        data: (listeTravaux) {
+          // 📊 CALCULS DES STATISTIQUES
+          final int total = listeTravaux.length;
+          final int termines = listeTravaux.where((t) => t.statut == 'termine').length;
+          print("📊 Travaux reçus UI: ${listeTravaux.length}");
+          for (var t in listeTravaux) {
+            print("➡ ${t.commentaire} | statut=${t.statut}");
+          }
+          // ✅ MODIFICATION : On affiche les travaux En cours ET En attente
+          final listAffiche = listeTravaux.where((t) =>
+              ['en_cours', 'en_attente'].contains(t.statut)
+          ).toList();
+
+          final int performance = total == 0 ? 0 : (termines / total * 100).toInt();
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // --- SECTION PROFIL ---
+                _buildProfileHeader(colorScheme, termines, total, performance),
+                const SizedBox(height: 24),
+
+                // --- CARTES DE STATISTIQUES ---
                 Row(
                   children: [
-                    CircleAvatar(
-                      radius: 32,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: const Text(
-                        'JD',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Jean Dupont',
-                            style:
-                            Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Technicien réseau senior',
-                            style:
-                            Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on,
-                                size: 14,
-                                color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Paris',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.green, width: 1),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Colors.green,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Disponible',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                              color: Colors.green,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Expanded(child: _buildStatCard("$total", "Total", Icons.work_outline, Colors.red)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildStatCard("$termines", "Terminés", Icons.check_circle_outline, Colors.teal)),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildStatCard("$performance%", "Perf.", Icons.emoji_events_outlined, Colors.orange)),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
 
-                // Cartes de statistiques
-                Text(
-                  'Mes statistiques',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.1,
-                  ),
-                  itemCount: _stats.length,
-                  itemBuilder: (context, index) {
-                    final stat = _stats[index];
-                    return Card(
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: stat['color'].withOpacity(0.1),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    stat['icon'],
-                                    color: stat['color'],
-                                    size: 20,
-                                  ),
-                                ),
-                                Text(
-                                  stat['value'],
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleLarge
-                                      ?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              stat['label'],
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            LinearProgressIndicator(
-                              value: stat['progress'],
-                              backgroundColor:
-                              stat['color'].withOpacity(0.1),
-                              color: stat['color'],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-
-                // Travaux du jour
+                // --- TITRE LISTE ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Mes travaux',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      "Travaux à réaliser",
+                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text('Voir planning'),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        "${listAffiche.length}",
+                        style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-              ]),
+                const SizedBox(height: 16),
+
+                // --- LISTE DYNAMIQUE ---
+                if (listAffiche.isEmpty)
+                  _buildEmptyState()
+                else
+                  ...listAffiche.map((travail) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: _buildWorkCard(context, travail),
+                  )).toList(),
+              ],
             ),
-          ),
+          );
+        },
+      ),
+    );
+  }
 
-          // Liste des travaux
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                  final travail = _mesTravaux[index];
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: index == _mesTravaux.length - 1 ? 0 : 12),
-                    child: CardTravail(
-                      titre: travail['titre'],
-                      client: travail['client'],
-                      date: travail['date'],
-                      statut: travail['statut'],
-                      priorite: travail['priorite'],
-                      onTap: () {
+  // Widget si aucun travail n'est trouvé
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Column(
+          children: [
+            Icon(Icons.inbox_outlined, size: 60, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text("Aucun travail prévu pour le moment",
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
+          ],
+        ),
+      ),
+    );
+  }
 
-                      },
-                    ),
+  // Header avec Jauge de progression
+  Widget _buildProfileHeader(ColorScheme colorScheme, int termines, int total, int performance) {
+    double progress = total == 0 ? 0 : termines / total;
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: Colors.grey.shade200)
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          children: [
+            const CircleAvatar(
+                radius: 40,
+                backgroundColor: Color(0xFFD32F2F),
+                child: Text("JD", style: TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold))
+            ),
+            const SizedBox(height: 12),
+            Text("Jean Dupont", style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600)),
+            const Text("Chef d'équipe", style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text("Taux de complétion", style: TextStyle(fontWeight: FontWeight.w500)),
+                Text("$performance%", style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 8,
+                  backgroundColor: Colors.red.shade50,
+                  color: Colors.red.shade600
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text("$termines / $total travaux terminés",
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Carte de travail individuelle
+  Widget _buildWorkCard(BuildContext context, Travail travail) {
+    // Formatage de la date (ex: 22 déc. 2025)
+    String dateLabel = "Date non définie";
+    if (travail.datePlanifiee != null) {
+      dateLabel = DateFormat('dd MMM yyyy', 'fr_FR').format(travail.datePlanifiee!);
+    }
+
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.grey.shade200)
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                    child: Text(
+                        travail.commentaire ?? "Intervention Maintenance",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)
+                    )
+                ),
+                _buildStatusBadge(travail.statut),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildInfoRow(Icons.calendar_today_outlined, "Prévu le: ", dateLabel),
+            const SizedBox(height: 4),
+            _buildInfoRow(Icons.label_outline, "Type: ", travail.typeId), // ✅ Utilisation de typeId
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SuiviTravailScreen(travail: travail)),
                   );
                 },
-                childCount: _mesTravaux.length,
+                style: OutlinedButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text("Détails de l'intervention"),
               ),
-            ),
-          ),
-          const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-        ],
-      ),
-
-      // Boutons d'action rapide
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'report',
-            onPressed: () {
-              _showRapportDialog();
-            },
-            child: const Icon(Icons.report),
-          ),
-          const SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: 'main',
-            onPressed: () {
-              _showActionsMenu(context);
-            },
-            child: const Icon(Icons.add),
-          ),
-        ],
-      ),
-
-      // Navigation inférieure
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard),
-            selectedIcon: Icon(Icons.dashboard_outlined),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.work),
-            selectedIcon: Icon(Icons.work_outline),
-            label: 'Travaux',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.schedule),
-            selectedIcon: Icon(Icons.schedule_outlined),
-            label: 'Planning',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person),
-            selectedIcon: Icon(Icons.person_outline),
-            label: 'Profil',
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showRapportDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Générer un rapport'),
-          content: const Text(
-            'Choisissez le type de rapport à générer :',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
-            ),
-            FilledButton(
-              onPressed: () {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Rapport généré avec succès'),
-                    action: SnackBarAction(
-                      label: 'Télécharger',
-                      onPressed: () {},
-                    ),
-                  ),
-                );
-              },
-              child: const Text('Générer'),
             ),
           ],
-        );
-      },
-    );
-  }
-
-  void _showActionsMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  'Actions rapides',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              GridView.count(
-                shrinkWrap: true,
-                crossAxisCount: 3,
-                padding: const EdgeInsets.all(16),
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                children: [
-                  _buildActionButton(
-                    context,
-                    Icons.timer,
-                    'Début travail',
-                    Colors.blue,
-                  ),
-                  _buildActionButton(
-                    context,
-                    Icons.check_circle,
-                    'Terminer',
-                    Colors.green,
-                  ),
-                  _buildActionButton(
-                    context,
-                    Icons.camera_alt,
-                    'Prendre photo',
-                    Colors.purple,
-                  ),
-                  _buildActionButton(
-                    context,
-                    Icons.note_add,
-                    'Ajouter note',
-                    Colors.orange,
-                  ),
-                  _buildActionButton(
-                    context,
-                    Icons.location_on,
-                    'Partager position',
-                    Colors.red,
-                  ),
-                  _buildActionButton(
-                    context,
-                    Icons.help,
-                    'Demander aide',
-                    Colors.teal,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
     );
   }
 
-  Widget _buildActionButton(
-      BuildContext context,
-      IconData icon,
-      String label,
-      Color color,
-      ) {
-    return InkWell(
-      onTap: () {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Action : $label'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+  // Badge dynamique selon le statut
+  Widget _buildStatusBadge(String statut) {
+    Color color;
+    String label;
+
+    switch (statut) {
+      case 'en_cours':
+        color = Colors.blue.shade600;
+        label = "EN COURS";
+        break;
+      case 'en_attente':
+        color = Colors.orange.shade700;
+        label = "EN ATTENTE";
+        break;
+      case 'termine':
+        color = Colors.teal;
+        label = "TERMINÉ";
+        break;
+      default:
+        color = Colors.grey;
+        label = statut.toUpperCase();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
+      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Row(children: [
+      Icon(icon, size: 16, color: Colors.grey.shade600),
+      const SizedBox(width: 8),
+      Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+      Text(value, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+    ]);
+  }
+
+  Widget _buildStatCard(String value, String label, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+      decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 2,
-              ),
-            ),
-          ],
-        ),
+          border: Border.all(color: Colors.grey.shade200)
       ),
+      child: Column(children: [
+        Icon(icon, color: color, size: 28),
+        const SizedBox(height: 12),
+        Text(value, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold)),
+        Text(label, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+      ]),
     );
   }
 }
