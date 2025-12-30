@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import '../technicien/dashboard_technicien.dart';
 import 'dashboard_admin.dart'; // Ton dashboard actuel (renommé en DashboardHome)
 import 'gestion_clients.dart';
 import 'gestion_techniciens.dart'; // LA LISTE
 import '../../widgets/admin_bottom_nav.dart';
+import 'gestion_equipes.dart';
+import 'gestion_travaux.dart';
 
 class AdminMainLayout extends StatefulWidget {
   const AdminMainLayout({super.key});
@@ -18,9 +21,11 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
   final List<Widget> _pages = [
     const DashboardAdminScreen(), // Index 0 : Board
     const GestionClientsScreen(), // Index 1 : Clients
-    const Center(child: Text("Gestion Travaux")), // Index 2 : Placeholder
-    const Center(child: Text("Gestion Équipes")), // Index 3 : Placeholder
-    const GestionTechniciens(),
+
+    const GestionTravauxScreen(), // Index 2 : Placeholder
+    const GestionEquipesScreen(), // Index 3 : Placeholder
+    const DashboardTechnicien(), // Index 4 : Placeholder
+
   ];
 
   @override
