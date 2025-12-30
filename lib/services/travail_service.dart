@@ -39,4 +39,26 @@ class TravailService {
       'statut': 'assigne',
     });
   }
+
+  // Ajouter cette méthode dans la classe TravailService
+  Future<void> affecterEquipe(String travailId, String equipeId) async {
+    await _db.doc(travailId).update({
+      'id_equipe': equipeId,
+      'statut': 'en_cours', // Passe en "En cours" dès qu'une équipe est sur le coup
+    });
+  }
+
+  // Dans la classe TravailService
+
+  /// 🔹 Modifier un travail existant
+  Future<void> updateTravail(String id, Map<String, dynamic> data) async {
+    await _db.doc(id).update(data);
+  }
+
+  /// 🔹 Supprimer un travail
+  Future<void> deleteTravail(String id) async {
+    await _db.doc(id).delete();
+    // Optionnel : Supprimer aussi les suivis associés dans 'suivi_travaux'
+  }
+
 }

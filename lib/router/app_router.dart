@@ -9,7 +9,8 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/admin',
-      builder: (context, state) => const DashboardTechnicien(),
+      //builder: (context, state) => const DashboardTechnicien(),
+      builder: (context, state) => const AdminMainLayout(),
     ),
   ],
 );
