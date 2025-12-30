@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Pour HapticFeedback
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+// --- IMPORT DE TES FICHIERS (Vérifie bien les chemins) ---
 import '../models/client.dart';
 import '../providers/client_provider.dart';
 import '../screens/admin/client_detail_screen.dart';
@@ -7,12 +11,12 @@ import '../screens/admin/add_client_form.dart';
 
 class AdminClientCard extends ConsumerStatefulWidget {
   final Client client;
-  final bool isManagementMode; // true = Écran de gestion (3 points), false = Dashboard (Badge)
+  final bool isManagementMode;
 
   const AdminClientCard({
     super.key,
     required this.client,
-    this.isManagementMode = false, // Par défaut, on affiche le badge (Dashboard)
+    this.isManagementMode = false,
   });
 
   @override
@@ -24,7 +28,7 @@ class _AdminClientCardState extends ConsumerState<AdminClientCard> {
 
   @override
   Widget build(BuildContext context) {
-    const Color statusColor = Color(0xFFF57C00); // Orange
+    final colorScheme = Theme.of(context).colorScheme;
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -36,141 +40,209 @@ class _AdminClientCardState extends ConsumerState<AdminClientCard> {
         child: Container(
           margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.grey.shade100, width: 1.5),
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.5)),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 8)),
+              BoxShadow(
+                color: colorScheme.shadow.withOpacity(0.04),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // --- HEADER CONDITIONNEL ---
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(28),
+            onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ClientDetailScreen(client: widget.client))
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- AVATAR CLIENT ---
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: colorScheme.primaryContainer.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(
                           child: Text(
-                            widget.client.nomClient,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF1A1C1E),
-                              letterSpacing: -0.5,
+                            widget.client.nomClient.isNotEmpty
+                                ? widget.client.nomClient.substring(0, 1).toUpperCase()
+                                : "?",
+                            style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 20
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 12),
-
-                        // LOGIQUE ICI :
-                        if (widget.isManagementMode)
-                        // SI MODE GESTION -> ON AFFICHE LES 3 POINTS
-                          _buildPopupMenu(context)
-                        else
-                        // SI MODE DASHBOARD -> ON AFFICHE LE BADGE
-                          _buildStatusBadge("Équipe assignée", statusColor),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-
-                    // --- ADRESSE ---
-                    Row(
-                      children: [
-                        Icon(Icons.location_on_rounded, size: 16, color: Colors.grey.shade400),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            "${widget.client.adresse}, ${widget.client.ville}",
-                            style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-
-                    // --- INFO BOX ---
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(16)),
-                      child: Column(
-                        children: [
-                          _buildInfoRow(Icons.description_outlined, "Contrat", widget.client.typeContrat),
-                          const Padding(padding: EdgeInsets.symmetric(vertical: 8), child: Divider(height: 1, thickness: 0.5)),
-                          _buildInfoRow(Icons.event_available_outlined, "Intervention", "À planifier"),
-                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // --- BOUTON D'ACTION ---
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: Container(
-                  width: double.infinity,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: const LinearGradient(colors: [Color(0xFFE53935), Color(0xFFD32F2F)]),
-                    boxShadow: [BoxShadow(color: const Color(0xFFD32F2F).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4))],
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.client.nomClient,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(Icons.location_on_rounded, size: 14, color: colorScheme.primary.withOpacity(0.7)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  widget.client.ville,
+                                  style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (widget.isManagementMode)
+                        _buildPopupMenu(context, colorScheme)
+                      else
+                        _buildStatusBadge("À PLANIFIER", Colors.orange),
+                    ],
                   ),
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ClientDetailScreen(client: widget.client))),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  const SizedBox(height: 20),
+
+                  // --- SECTION INFO TONALE ---
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceVariant.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
                       children: [
-                        Text("Détails du client", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white)),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 18),
+                        _buildCompactInfo(Icons.description_outlined, widget.client.typeContrat, colorScheme),
+                        Container(
+                            height: 24,
+                            width: 1,
+                            color: colorScheme.outlineVariant,
+                            margin: const EdgeInsets.symmetric(horizontal: 16)
+                        ),
+                        _buildCompactInfo(Icons.calendar_today_rounded, "Prochaine: N/A", colorScheme),
                       ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: 16),
+
+                  // --- QUICK ACTIONS ---
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonal(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            // Action appel par exemple
+                          },
+                          style: FilledButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text("Contacter"),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      IconButton.filledTonal(
+                        onPressed: () {},
+                        icon: const Icon(Icons.map_rounded),
+                        style: IconButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // Widget pour les 3 points
-  Widget _buildPopupMenu(BuildContext context) {
-    return PopupMenuButton<String>(
-      icon: const Icon(Icons.more_vert, color: Colors.grey),
-      onSelected: (val) => _handleAction(val, context),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      itemBuilder: (context) => [
-        const PopupMenuItem(value: 'edit', child: Row(children: [Icon(Icons.edit_outlined, size: 20), SizedBox(width: 10), Text("Modifier")])),
-        const PopupMenuItem(value: 'delete', child: Row(children: [Icon(Icons.delete_outline, color: Colors.red, size: 20), SizedBox(width: 10), Text("Supprimer", style: TextStyle(color: Colors.red))])),
-      ],
+  Widget _buildCompactInfo(IconData icon, String value, ColorScheme colorScheme) {
+    return Expanded(
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  // Widget pour le badge orange
+  Widget _buildPopupMenu(BuildContext context, ColorScheme colorScheme) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_horiz_rounded, color: colorScheme.outline),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      itemBuilder: (context) => [
+        PopupMenuItem(value: 'edit', child: _buildMenuRow(Icons.edit_rounded, "Modifier", colorScheme.onSurface)),
+        PopupMenuItem(value: 'delete', child: _buildMenuRow(Icons.delete_rounded, "Supprimer", colorScheme.error)),
+      ],
+      onSelected: (val) => _handleAction(val, context),
+    );
+  }
+
+  Widget _buildMenuRow(IconData icon, String label, Color color) {
+    return Row(children: [
+      Icon(icon, size: 20, color: color),
+      const SizedBox(width: 12),
+      Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600))
+    ]);
+  }
+
   Widget _buildStatusBadge(String text, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10), border: Border.all(color: color.withOpacity(0.2), width: 1)),
-      child: Text(text.toUpperCase(), style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+      decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.2))
+      ),
+      child: Text(
+          text,
+          style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)
+      ),
     );
   }
 
   void _handleAction(String value, BuildContext context) {
     if (value == 'edit') {
-      showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (context) => AddClientForm(client: widget.client));
+      showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => AddClientForm(client: widget.client)
+      );
     } else if (value == 'delete') {
       _showDeleteDialog(context);
     }
@@ -180,24 +252,21 @@ class _AdminClientCardState extends ConsumerState<AdminClientCard> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: const Text("Supprimer ?"),
         content: Text("Voulez-vous supprimer ${widget.client.nomClient} ?"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
-          TextButton(onPressed: () { ref.read(clientServiceProvider).deleteClient(widget.client.id!); Navigator.pop(context); }, child: const Text("Supprimer", style: TextStyle(color: Colors.red))),
+          FilledButton(
+            onPressed: () {
+              ref.read(clientServiceProvider).deleteClient(widget.client.id!);
+              Navigator.pop(context);
+            },
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+            child: const Text("Supprimer"),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey.shade500),
-        const SizedBox(width: 10),
-        Text("$label : ", style: const TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.w500)),
-        Expanded(child: Text(value, style: const TextStyle(color: Color(0xFF2D3142), fontWeight: FontWeight.w700, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right)),
-      ],
     );
   }
 }

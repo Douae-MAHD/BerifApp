@@ -6,6 +6,7 @@ import 'gestion_techniciens.dart'; // LA LISTE
 import '../../widgets/admin_bottom_nav.dart';
 import 'gestion_equipes.dart';
 import 'gestion_travaux.dart';
+import 'gestion_techniciens.dart';
 
 class AdminMainLayout extends StatefulWidget {
   const AdminMainLayout({super.key});
@@ -24,7 +25,7 @@ class _AdminMainLayoutState extends State<AdminMainLayout> {
 
     const GestionTravauxScreen(), // Index 2 : Placeholder
     const GestionEquipesScreen(), // Index 3 : Placeholder
-    const DashboardTechnicien(), // Index 4 : Placeholder
+    const GestionTechniciens(), // Index 4 : Placeholder
 
   ];
 

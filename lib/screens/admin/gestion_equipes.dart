@@ -2,100 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Modèles
+// Import de vos modèles et providers
 import '../../models/equipe.dart';
 import '../../models/technicien.dart';
-
-// Providers
 import '../../providers/equipe_provider.dart';
-
-// Formulaire
 import 'AddEquipeForm.dart';
 
 class GestionEquipesScreen extends ConsumerWidget {
   const GestionEquipesScreen({super.key});
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final equipesAsync = ref.watch(allEquipesProvider);
-
-    // Statistiques pour les KPIs du haut
-    final totalEquipes = ref.watch(equipeCountProvider).asData?.value ?? 0;
-    final equipesDispo = ref.watch(equipesDisponiblesProvider).asData?.value.length ?? 0;
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F6F8),
-      appBar: AppBar(
-        title: Text("Gestion des Équipes",
-            style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 20)),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-      ),
-      body: Column(
-        children: [
-          // --- SECTION 1 : KPIs ÉQUIPES ---
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                _buildKpiSmall(totalEquipes.toString(), "Total", Colors.white, Colors.black),
-                _buildKpiSmall(equipesDispo.toString(), "Disponibles", const Color(0xFFE8F5E9), const Color(0xFF43A047)),
-                _buildKpiSmall((totalEquipes - equipesDispo).toString(), "Occupées", const Color(0xFFFFF3E0), const Color(0xFFFB8C00)),
-              ],
-            ),
-          ),
-
-          // --- SECTION 2 : LISTE DES ÉQUIPES ---
-          Expanded(
-            child: equipesAsync.when(
-              data: (equipes) => ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                itemCount: equipes.length,
-                itemBuilder: (context, index) {
-                  return _EquipeCard(equipe: equipes[index]);
-                },
-              ),
-              loading: () => const Center(child: CircularProgressIndicator(color: Color(0xFFE53935))),
-              error: (err, _) => Center(child: Text("Erreur : $err")),
-            ),
-          ),
-        ],
-      ),
-
-      // --- BOUTON D'AJOUT PREMIUM ---
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showEquipeForm(context, null),
-        backgroundColor: const Color(0xFF2D3142),
-        icon: const Icon(Icons.group_add_rounded, color: Colors.white),
-        label: Text("CRÉER UNE ÉQUIPE", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Colors.white)),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
-  }
-
-  // --- WIDGETS INTERNES ---
-
-  Widget _buildKpiSmall(String val, String label, Color bg, Color txt) {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          children: [
-            Text(val, style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: txt)),
-            Text(label, style: GoogleFonts.poppins(fontSize: 10, color: txt.withOpacity(0.7), fontWeight: FontWeight.w600)),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // Méthode pour afficher le formulaire (utilisée pour Ajout et Modification)
   void _showEquipeForm(BuildContext context, Equipe? equipe) {
     showModalBottomSheet(
       context: context,
@@ -104,153 +20,391 @@ class GestionEquipesScreen extends ConsumerWidget {
       builder: (context) => AddEquipeForm(equipe: equipe),
     );
   }
-}
-
-class _EquipeCard extends ConsumerWidget {
-  final Equipe equipe;
-  const _EquipeCard({required this.equipe});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // On écoute les membres de CETTE équipe en temps réel
-    final membresAsync = ref.watch(membresEquipeProvider(equipe.id!));
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        children: [
-          ListTile(
-            contentPadding: const EdgeInsets.fromLTRB(20, 10, 10, 5),
-            title: Text(equipe.nomEquipe,
-                style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 17)),
-            subtitle: _buildStatusChip(equipe.disponibilite),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_note_rounded, color: Color(0xFF2D3142)),
-                  onPressed: () => _showEditForm(context),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFE53935)),
-                  onPressed: () => _showDeleteDialog(context, ref),
-                ),
-              ],
+    final equipesAsync = ref.watch(allEquipesProvider);
+    final totalEquipes = ref.watch(equipeCountProvider).asData?.value ?? 0;
+    final equipesDispo = ref.watch(equipesDisponiblesProvider).asData?.value.length ?? 0;
+
+    return Scaffold(
+      backgroundColor: colorScheme.surfaceVariant.withOpacity(0.3),
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          // --- APPBAR MD3 ---
+          SliverAppBar.large(
+            expandedHeight: 140,
+            floating: false,
+            pinned: true,
+            stretch: true,
+            backgroundColor: colorScheme.surface,
+            surfaceTintColor: colorScheme.surfaceTint,
+            title: Text(
+              "Gestion des Équipes",
+              style: GoogleFonts.plusJakartaSans(
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+              ),
             ),
           ),
-          const Divider(indent: 20, endIndent: 20, height: 1),
 
-          // --- LISTE DES MEMBRES ---
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.engineering_outlined, size: 16, color: Colors.grey),
-                    const SizedBox(width: 8),
-                    Text("MEMBRES DE L'ÉQUIPE",
-                        style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.grey, letterSpacing: 1)),
-                  ],
+          // --- SECTION KPI ---
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+              child: Row(
+                children: [
+                  _buildKpiCard(
+                    context,
+                    title: "Total",
+                    value: totalEquipes.toString(),
+                    icon: Icons.groups_rounded,
+                    color: colorScheme.primary,
+                  ),
+                  _buildKpiCard(
+                    context,
+                    title: "Dispo",
+                    value: equipesDispo.toString(),
+                    icon: Icons.check_circle_outline_rounded,
+                    color: const Color(0xFF10B981),
+                  ),
+                  _buildKpiCard(
+                    context,
+                    title: "En mission",
+                    value: (totalEquipes - equipesDispo).toString(),
+                    icon: Icons.engineering_rounded,
+                    color: Colors.orangeAccent,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // --- LISTE DES ÉQUIPES ---
+          equipesAsync.when(
+            data: (equipes) => SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 100),
+              sliver: SliverList(
+                delegate: SliverChildBuilderDelegate(
+                      (context, index) => _EquipeCard(
+                    equipe: equipes[index],
+                    // On passe la fonction de modification à la carte
+                    onEdit: () => _showEquipeForm(context, equipes[index]),
+                  ),
+                  childCount: equipes.length,
                 ),
-                const SizedBox(height: 12),
-                membresAsync.when(
-                  data: (membres) {
-                    if (membres.isEmpty) {
-                      return Text("Aucun technicien affecté",
-                          style: GoogleFonts.poppins(fontSize: 13, fontStyle: FontStyle.italic, color: Colors.grey));
-                    }
-                    return Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: membres.map((m) => _buildTechBadge(m)).toList(),
-                    );
-                  },
-                  loading: () => const LinearProgressIndicator(minHeight: 2),
-                  error: (_, __) => const Text("Erreur de chargement"),
-                ),
-              ],
+              ),
+            ),
+            loading: () => const SliverFillRemaining(
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            ),
+            error: (err, _) => SliverFillRemaining(
+              child: Center(child: Text("Erreur : $err")),
             ),
           ),
         ],
       ),
-    );
-  }
 
-  Widget _buildTechBadge(Technicien t) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F3F9),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.person, size: 14, color: Color(0xFF2D3142)),
-          const SizedBox(width: 6),
-          Text("${t.prenom} ${t.nom}",
-              style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF2D3142))),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(bool dispo) {
-    return Container(
-      margin: const EdgeInsets.only(top: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: dispo ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        dispo ? "DISPONIBLE" : "EN MISSION",
-        style: GoogleFonts.poppins(
-            fontSize: 9,
-            fontWeight: FontWeight.w800,
-            color: dispo ? const Color(0xFF43A047) : const Color(0xFFE53935)
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showEquipeForm(context, null),
+        elevation: 4,
+        backgroundColor: colorScheme.primaryContainer,
+        foregroundColor: colorScheme.onPrimaryContainer,
+        icon: const Icon(Icons.add_rounded, size: 28),
+        label: Text(
+          "NOUVELLE ÉQUIPE",
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold),
         ),
       ),
     );
   }
 
-  void _showEditForm(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddEquipeForm(equipe: equipe),
+  Widget _buildKpiCard(BuildContext context, {
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Card(
+        elevation: 0,
+        color: colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.5)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              Text(
+                title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EquipeCard extends ConsumerWidget {
+  final Equipe equipe;
+  final VoidCallback onEdit; // Callback pour déclencher la modification
+
+  const _EquipeCard({required this.equipe, required this.onEdit});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final membresAsync = ref.watch(membresEquipeProvider(equipe.id!));
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+        side: BorderSide(color: colorScheme.outlineVariant.withOpacity(0.4)),
+      ),
+      color: colorScheme.surface,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: equipe.disponibilite
+                      ? colorScheme.primaryContainer
+                      : colorScheme.errorContainer,
+                  child: Text(
+                    equipe.nomEquipe.substring(0, 1).toUpperCase(),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: equipe.disponibilite
+                          ? colorScheme.onPrimaryContainer
+                          : colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        equipe.nomEquipe,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      _buildStatusIndicator(context, equipe.disponibilite),
+                    ],
+                  ),
+                ),
+                _buildActionMenu(context, ref),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceVariant.withOpacity(0.2),
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.people_outline_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Effectif",
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant
+                      ),
+                    ),
+                  ],
+                ),
+                membresAsync.when(
+                  data: (membres) => _buildAvatarStack(context, membres),
+                  loading: () => const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                  error: (_, __) => const Icon(Icons.error_outline, size: 20),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
+  Widget _buildStatusIndicator(BuildContext context, bool dispo) {
+    final color = dispo ? const Color(0xFF10B981) : Colors.orange;
+    return Row(
+      children: [
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          dispo ? "Prêt pour mission" : "En cours d'intervention",
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: color.withOpacity(0.8),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAvatarStack(BuildContext context, List<Technicien> membres) {
+    if (membres.isEmpty) {
+      return Text("Aucun membre", style: GoogleFonts.plusJakartaSans(fontSize: 12, color: Colors.grey));
+    }
+    const double size = 32;
+    return SizedBox(
+      height: size,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: (membres.length > 3 ? 3 : membres.length) * 22.0 + 10,
+            child: Stack(
+              children: List.generate(
+                membres.length > 3 ? 3 : membres.length,
+                    (index) => Positioned(
+                  left: index * 20.0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Theme.of(context).colorScheme.surface, width: 2),
+                    ),
+                    child: CircleAvatar(
+                      radius: size / 2,
+                      backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+                      child: Text(
+                        membres[index].prenom[0],
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onTertiaryContainer),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          if (membres.length > 3)
+            Text(
+              "+${membres.length - 3}",
+              style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.bold),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // --- LOGIQUE DE SUPPRESSION ---
   void _showDeleteDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: Text("Supprimer l'équipe ?", style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
-        content: Text("Voulez-vous vraiment supprimer l'équipe '${equipe.nomEquipe}' ?"),
+        title: Text("Supprimer l'équipe ?", style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+        content: Text("Voulez-vous vraiment supprimer '${equipe.nomEquipe}' ? Cette action supprimera également les affectations liées."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ANNULER")),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE53935), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("ANNULER"),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
             onPressed: () async {
+              // 1. Supprimer les affectations liées
+              await ref.read(affectationServiceProvider).removeAllAffectationsByEquipe(equipe.id!);
+              // 2. Supprimer l'équipe
               await ref.read(equipeServiceProvider).deleteEquipe(equipe.id!);
-              Navigator.pop(context);
+
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Équipe supprimée"), behavior: SnackBarBehavior.floating),
+                );
+              }
             },
-            child: const Text("SUPPRIMER", style: TextStyle(color: Colors.white)),
+            child: const Text("SUPPRIMER"),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionMenu(BuildContext context, WidgetRef ref) {
+    return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert_rounded),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      onSelected: (value) {
+        if (value == 'edit') {
+          onEdit(); // Appelle la fonction de modification
+        } else if (value == 'delete') {
+          _showDeleteDialog(context, ref); // Appelle le dialogue de suppression
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'edit',
+          child: ListTile(
+            leading: Icon(Icons.edit_outlined),
+            title: Text("Modifier"),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'delete',
+          child: ListTile(
+            leading: Icon(Icons.delete_outline, color: Colors.red),
+            title: Text("Supprimer", style: TextStyle(color: Colors.red)),
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,7 +1,15 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/utilisateur.dart';
+
+// --- Les Providers sont en DEHORS de la classe ---
+final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+
+final authStateProvider = StreamProvider<User?>((ref) {
+  return FirebaseAuth.instance.authStateChanges();
+});
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -16,9 +24,7 @@ class AuthService {
       );
 
       final uid = result.user!.uid;
-
-      DocumentSnapshot doc =
-      await _db.collection('utilisateurs').doc(uid).get();
+      DocumentSnapshot doc = await _db.collection('utilisateurs').doc(uid).get();
 
       if (!doc.exists) {
         throw Exception("Profil utilisateur introuvable");
@@ -31,7 +37,6 @@ class AuthService {
   }
 
   // ================= CREATE TECH =================
-  // Dans AuthService.dart
   Future<void> adminCreateTechnician({
     required String email,
     required String password,
@@ -41,9 +46,7 @@ class AuthService {
   }) async {
     FirebaseApp tempApp = await Firebase.initializeApp(
       name: 'TempApp',
-      options: Firebase
-          .app()
-          .options,
+      options: Firebase.app().options,
     );
 
     final tempAuth = FirebaseAuth.instanceFor(app: tempApp);
@@ -57,7 +60,6 @@ class AuthService {
 
       final uid = result.user!.uid;
 
-      // 1. Créer le compte Utilisateur
       await tempDb.collection('utilisateurs').doc(uid).set({
         'username': username,
         'email': email.trim().toLowerCase(),
@@ -66,16 +68,21 @@ class AuthService {
         'dateCreation': FieldValue.serverTimestamp(),
       });
 
-      // 2. Créer le profil Technicien (Relation 1:1 via l'ID)
       await tempDb.collection('techniciens').doc(uid).set({
         'id_utilisateur': uid,
         'nom': username,
         'prenom': prenom,
         'email': email.trim().toLowerCase(),
         'telephone': telephone,
-        'specialite': 'Général', // Par défaut
+        'specialite': 'Général',
       });
     } finally {
       await tempApp.delete();
     }
-  }}
+  }
+
+  // ================= LOGOUT =================
+  Future<void> logout() async {
+    await _auth.signOut();
+  }
+} // <--- FIN DE LA CLASSE (Une seule accolade ici)

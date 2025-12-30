@@ -1,40 +1,95 @@
+import 'dart:ui'; // ✅ OBLIGATOIRE pour ImageFilter
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart'; // ✅ Pour formater les dates
+import 'package:intl/intl.dart';
 import '../../providers/travail_provider.dart';
 import '../../models/travail.dart';
+import '../../services/auth_service.dart'; // ✅ Assurez-vous que le chemin est correct
 import 'suivi_travail_screen.dart';
+
 class DashboardTechnicien extends ConsumerWidget {
   const DashboardTechnicien({super.key});
+
+  // ✅ AJOUT DE LA MÉTHODE DE DÉCONNEXION
+  void _handleLogout(BuildContext context, WidgetRef ref) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Déconnexion"),
+        content: const Text("Voulez-vous vraiment vous déconnecter ?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Annuler"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Déconnexion", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await ref.read(authServiceProvider).logout();
+      if (context.mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = Theme.of(context).colorScheme;
-
-    // 📡 Écoute du flux Firebase
     final travauxAsync = ref.watch(travauxStreamProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7), // Fond gris très léger pour faire ressortir les cartes
+      extendBodyBehindAppBar: true, // ✅ Pour l'effet transparent
+      backgroundColor: const Color(0xFFF5F5F7),
+
+      // --- APPBAR MODERNE ---
       appBar: AppBar(
-        title: const Text("Mon Tableau de Bord"),
-        centerTitle: true,
+        backgroundColor: Colors.white.withOpacity(0.7),
         elevation: 0,
-        backgroundColor: Colors.white,
+        scrolledUnderElevation: 0,
+        flexibleSpace: ClipRRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12), // ✅ Maintenant reconnu
+            child: Container(color: Colors.transparent),
+          ),
+        ),
+        title: Text(
+          "Mon Tableau de Bord",
+          style: GoogleFonts.poppins(
+            color: const Color(0xFF2D3142),
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: false,
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.logout_rounded, color: Colors.red, size: 22),
+              onPressed: () => _handleLogout(context, ref), // ✅ Maintenant défini
+            ),
+          ),
+        ],
       ),
+
       body: travauxAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text("Erreur de connexion : $err")),
+        error: (err, stack) => Center(child: Text("Erreur : $err")),
         data: (listeTravaux) {
-          // 📊 CALCULS DES STATISTIQUES
           final int total = listeTravaux.length;
           final int termines = listeTravaux.where((t) => t.statut == 'termine').length;
-          print("📊 Travaux reçus UI: ${listeTravaux.length}");
-          for (var t in listeTravaux) {
-            print("➡ ${t.commentaire} | statut=${t.statut}");
-          }
-          // ✅ MODIFICATION : On affiche les travaux En cours ET En attente
+
           final listAffiche = listeTravaux.where((t) =>
               ['en_cours', 'en_attente'].contains(t.statut)
           ).toList();
@@ -42,15 +97,13 @@ class DashboardTechnicien extends ConsumerWidget {
           final int performance = total == 0 ? 0 : (termines / total * 100).toInt();
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
+            // ✅ Padding top pour ne pas être caché par l'AppBar transparente
+            padding: const EdgeInsets.fromLTRB(16, 110, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- SECTION PROFIL ---
                 _buildProfileHeader(colorScheme, termines, total, performance),
                 const SizedBox(height: 24),
-
-                // --- CARTES DE STATISTIQUES ---
                 Row(
                   children: [
                     Expanded(child: _buildStatCard("$total", "Total", Icons.work_outline, Colors.red)),
@@ -61,8 +114,6 @@ class DashboardTechnicien extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 32),
-
-                // --- TITRE LISTE ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -84,8 +135,6 @@ class DashboardTechnicien extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 16),
-
-                // --- LISTE DYNAMIQUE ---
                 if (listAffiche.isEmpty)
                   _buildEmptyState()
                 else
@@ -101,7 +150,9 @@ class DashboardTechnicien extends ConsumerWidget {
     );
   }
 
-  // Widget si aucun travail n'est trouvé
+  // --- LES AUTRES MÉTHODES (STATIQUES OU UI) GARDENT LE MÊME CODE ---
+  // (Gardez vos fonctions _buildEmptyState, _buildProfileHeader, etc. comme avant)
+
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
@@ -118,7 +169,6 @@ class DashboardTechnicien extends ConsumerWidget {
     );
   }
 
-  // Header avec Jauge de progression
   Widget _buildProfileHeader(ColorScheme colorScheme, int termines, int total, int performance) {
     double progress = total == 0 ? 0 : termines / total;
     return Card(
@@ -167,9 +217,7 @@ class DashboardTechnicien extends ConsumerWidget {
     );
   }
 
-  // Carte de travail individuelle
   Widget _buildWorkCard(BuildContext context, Travail travail) {
-    // Formatage de la date (ex: 22 déc. 2025)
     String dateLabel = "Date non définie";
     if (travail.datePlanifiee != null) {
       dateLabel = DateFormat('dd MMM yyyy', 'fr_FR').format(travail.datePlanifiee!);
@@ -202,7 +250,7 @@ class DashboardTechnicien extends ConsumerWidget {
             const SizedBox(height: 12),
             _buildInfoRow(Icons.calendar_today_outlined, "Prévu le: ", dateLabel),
             const SizedBox(height: 4),
-            _buildInfoRow(Icons.label_outline, "Type: ", travail.typeId), // ✅ Utilisation de typeId
+            _buildInfoRow(Icons.label_outline, "Type: ", travail.typeId),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
@@ -225,29 +273,15 @@ class DashboardTechnicien extends ConsumerWidget {
     );
   }
 
-  // Badge dynamique selon le statut
   Widget _buildStatusBadge(String statut) {
     Color color;
     String label;
-
     switch (statut) {
-      case 'en_cours':
-        color = Colors.blue.shade600;
-        label = "EN COURS";
-        break;
-      case 'en_attente':
-        color = Colors.orange.shade700;
-        label = "EN ATTENTE";
-        break;
-      case 'termine':
-        color = Colors.teal;
-        label = "TERMINÉ";
-        break;
-      default:
-        color = Colors.grey;
-        label = statut.toUpperCase();
+      case 'en_cours': color = Colors.blue.shade600; label = "EN COURS"; break;
+      case 'en_attente': color = Colors.orange.shade700; label = "EN ATTENTE"; break;
+      case 'termine': color = Colors.teal; label = "TERMINÉ"; break;
+      default: color = Colors.grey; label = statut.toUpperCase();
     }
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(8)),
