@@ -1,75 +1,41 @@
 import 'package:flutter/material.dart';
 
-class DrawerMenu extends StatelessWidget {
-  final String userRole;
-  final String userName;
-  final String userEmail;
-  final ValueChanged<String> onItemSelected;
-
-  const DrawerMenu({
-    super.key,
-    required this.userRole,
-    required this.userName,
-    required this.userEmail,
-    required this.onItemSelected,
-  });
+class AppDrawer extends StatelessWidget {
+  final bool isAdmin;
+  const AppDrawer({super.key, required this.isAdmin});
 
   @override
   Widget build(BuildContext context) {
     return Drawer(
       child: Column(
         children: [
-          UserAccountsDrawerHeader(
-            accountName: Text(userName),
-            accountEmail: Text(userEmail),
-            currentAccountPicture: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: Text(
-                userName.isNotEmpty ? userName[0].toUpperCase() : 'A',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primaryContainer,
-            ),
+          const UserAccountsDrawerHeader(
+            accountName: Text("Session BERIF"),
+            accountEmail: Text("Connecté"),
+            currentAccountPicture: CircleAvatar(child: Icon(Icons.person)),
           ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.dashboard),
-                  title: const Text('Dashboard'),
-                  onTap: () => onItemSelected('dashboard'),
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.work),
-                  title: const Text('Gestion Travaux'),
-                  onTap: () => onItemSelected('travaux'),
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.person),
-                  title: const Text('Profil'),
-                  onTap: () => onItemSelected('profil'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings),
-                  title: const Text('Paramètres'),
-                  onTap: () => onItemSelected('parametres'),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout),
-                  title: const Text('Déconnexion'),
-                  onTap: () => onItemSelected('deconnexion'),
-                ),
-              ],
+          ListTile(
+            leading: const Icon(Icons.dashboard),
+            title: const Text("Tableau de bord"),
+            onTap: () => Navigator.pushReplacementNamed(context, isAdmin ? '/admin_dashboard' : '/tech_dashboard'),
+          ),
+          if (isAdmin) ...[
+            ListTile(
+              leading: const Icon(Icons.people),
+              title: const Text("Gérer les Techniciens"),
+              onTap: () => Navigator.pushNamed(context, '/gestion_techs'),
             ),
+            ListTile(
+              leading: const Icon(Icons.business),
+              title: const Text("Gérer les Clients"),
+              onTap: () {},
+            ),
+          ],
+          const Spacer(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text("Déconnexion"),
+            onTap: () => Navigator.pushReplacementNamed(context, '/login'),
           ),
         ],
       ),

@@ -13,6 +13,12 @@ class TechnicienService {
   }
 
   Future<void> addTechnicien(Technicien tech) => _db.add(tech.toMap());
+  Future<void> updateTechnicien(String id, Map<String, dynamic> data) {
+    return FirebaseFirestore.instance
+        .collection('utilisateurs') // ou 'techniciens' selon ton nom de collection
+        .doc(id)
+        .update(data);
+  }
 
   Future<void> deleteTechnicien(String id) => _db.doc(id).delete();
 }

@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 
-class AppColorScheme {
-  static ColorScheme lightScheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF0066CC), // Bleu moderne
-    brightness: Brightness.light,
-    primary: const Color(0xFF0066CC),
-    secondary: const Color(0xFF66BB6A),
-    tertiary: const Color(0xFFFFB74D),
-  );
-
-  static ColorScheme darkScheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF5D9CEC),
-    brightness: Brightness.dark,
-    primary: const Color(0xFF5D9CEC),
-    secondary: const Color(0xFF81C784),
-    tertiary: const Color(0xFFFFA726),
-  );
+class AppColors {
+  static const Color primaryRed = Color(0xFFD32F2F);
+  static const Color background = Color(0xFFF5F7F9);
+  static const Color surface = Colors.white;
+  static const Color textDark = Color(0xFF1A1C1E);
+  static const Color textLight = Color(0xFF70777C);
 }
+
+const ColorScheme appColorScheme = ColorScheme(
+  brightness: Brightness.light,
+  primary: AppColors.primaryRed,
+  onPrimary: Colors.white,
+  secondary: Color(0xFF2196F3),
+  onSecondary: Colors.white,
+  error: Color(0xFFBA1A1A),
+  onError: Colors.white,
+  surface: AppColors.surface,
+  onSurface: AppColors.textDark,
+  outline: Color(0xFFC4C7C5),
+);
